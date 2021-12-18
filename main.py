@@ -1,8 +1,10 @@
 import picamera
 import psutil
 import os
-
-
+from bluedot import BlueDot
+import time
+bd = BlueDot()
+bd.wait_for_connection
 # delete oldest files until we reach 10 or folder is empty
 def deleteVids():
     i = 0
@@ -34,25 +36,21 @@ with open("/home/pi/PiDash/vidIndex.txt", "w") as f:
 
 newFile = "/home/pi/PiDash/videos/vid%s.h264" % vidIndex
 
-
 # initializing camera object, setting resolution to 1080p and framerate to 30fps
 with picamera.PiCamera() as cam:
     cam.framerate = 25
     cam.resolution = (1920,1080)
 
-# hardcode recording time to 2 minutes until button is set up
+# while recording check for "quit" button activity, and hard drive space
     recording = True
     cam.start_recording(newFile)
-    tempInterval = 1
     while recording:
         if psutil.disk_usage(".").percent > 85: 
             print("Low space, deleting old files")
             deleteVids()
 
-        cam.wait_recording(60)
-# NEED TO IMPLEMENT - if button is pressed, recording is False
-        if tempInterval <= 0:
-            recording = False
-        tempInterval -= 1
+# if button is currently held, set end recording loop
+        recording = not bd.is_pressed
+        cam.wait_recording(5)
 
     cam.stop_recording()
